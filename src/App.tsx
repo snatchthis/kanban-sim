@@ -1,114 +1,161 @@
+import {
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
 import { useSimulation } from "@/hooks/useSimulation";
 import { usePlayback } from "@/hooks/usePlayback";
 
 export default function App() {
   const { result, isRunning, run, reset } = useSimulation();
-  const { stepForward, stepBackward, seekToStart, seekToEnd, currentEventIndex, totalEvents } =
-    usePlayback();
+  const {
+    stepForward,
+    stepBackward,
+    seekToStart,
+    seekToEnd,
+    currentEventIndex,
+    totalEvents,
+  } = usePlayback();
+
+  const hasResult = Boolean(result);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        padding: "1rem",
-        gap: "1rem",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+    <div className="app">
+      <header className="app__header">
+        <div className="app__brand">
+          <span className="app__brand-mark" aria-hidden>
+            K
+          </span>
           Kanban Simulator
-        </h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <span className="app__brand-sub">flow · wip · cfd</span>
+        </div>
+
+        <div className="app__toolbar">
           <button
-            onClick={run}
-            disabled={isRunning}
-            style={{
-              padding: "0.5rem 1rem",
-              background: "var(--color-primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--radius-md)",
-            }}
+            type="button"
+            className="btn btn--ghost"
+            onClick={reset}
+            disabled={!hasResult || isRunning}
           >
-            Run Simulation
+            <RotateCcw size={14} />
+            Reset
           </button>
           <button
-            onClick={reset}
-            style={{
-              padding: "0.5rem 1rem",
-              background: "var(--color-surface)",
-              color: "var(--color-text)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "var(--radius-md)",
-            }}
+            type="button"
+            className="btn btn--primary"
+            onClick={run}
+            disabled={isRunning}
           >
-            Reset
+            <Play size={14} />
+            {isRunning ? "Running…" : "Run simulation"}
           </button>
         </div>
       </header>
 
-      {result && (
-        <>
-          <div
-            style={{
-              flex: 1,
-              background: "var(--color-surface)",
-              borderRadius: "var(--radius-lg)",
-              border: "1px solid var(--color-border)",
-              padding: "1rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            Board View — {result.events.length} events generated
-          </div>
+      <main className="app__main">
+        {hasResult ? (
+          <>
+            <section className="panel stat-strip" aria-label="Run summary">
+              <Metric label="Events" value={result!.events.length.toLocaleString()} />
+              <Metric label="Snapshots" value={result!.snapshots.length.toLocaleString()} />
+              <Metric
+                label="Position"
+                value={`${currentEventIndex + 1} / ${totalEvents}`}
+              />
+              <Metric label="Seed" value={<span className="mono">—</span>} />
+            </section>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              padding: "0.5rem",
-              background: "var(--color-surface)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            <button onClick={seekToStart}>|&lt;</button>
-            <button onClick={stepBackward}>&lt;</button>
-            <span style={{ fontVariantNumeric: "tabular-nums", minWidth: "8rem", textAlign: "center" }}>
-              Event {currentEventIndex + 1} / {totalEvents}
-            </span>
-            <button onClick={stepForward}>&gt;</button>
-            <button onClick={seekToEnd}>&gt;|</button>
-          </div>
-        </>
-      )}
+            <section className="panel board" aria-label="Board view">
+              <div className="empty">
+                <div className="empty__title">Board rendering pending</div>
+                <p className="empty__hint">
+                  Event stream is ready. The board component will derive state
+                  by replaying events — scaffold it under{" "}
+                  <code className="mono">src/components/board/</code>.
+                </p>
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="panel">
+            <div className="empty">
+              <div className="empty__title">No simulation yet</div>
+              <p className="empty__hint">
+                Configure a board and press{" "}
+                <kbd className="pill mono">Run simulation</kbd> to generate a
+                deterministic event stream. Same config + seed always produces
+                the same run.
+              </p>
+            </div>
+          </section>
+        )}
+      </main>
 
-      {!result && (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--color-text-secondary)",
-          }}
-        >
-          Configure a board and click "Run Simulation" to begin.
+      <footer className="app__footer">
+        <div className="transport" role="group" aria-label="Playback controls">
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onClick={seekToStart}
+            disabled={!hasResult || currentEventIndex === 0}
+            aria-label="Seek to start"
+          >
+            <SkipBack size={14} />
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onClick={stepBackward}
+            disabled={!hasResult || currentEventIndex === 0}
+            aria-label="Step back"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span className="transport__readout" aria-live="polite">
+            {hasResult
+              ? `${String(currentEventIndex + 1).padStart(String(totalEvents).length, "0")} / ${totalEvents}`
+              : "— / —"}
+          </span>
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onClick={stepForward}
+            disabled={!hasResult || currentEventIndex >= totalEvents - 1}
+            aria-label="Step forward"
+          >
+            <ChevronRight size={14} />
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onClick={seekToEnd}
+            disabled={!hasResult || currentEventIndex >= totalEvents - 1}
+            aria-label="Seek to end"
+          >
+            <SkipForward size={14} />
+          </button>
         </div>
-      )}
+      </footer>
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="metric">
+      <span className="metric__label">{label}</span>
+      <span className="metric__value" data-metric>
+        {value}
+      </span>
     </div>
   );
 }
