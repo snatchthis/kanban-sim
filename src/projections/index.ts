@@ -11,3 +11,5 @@ export { flowEfficiencyProjection } from "./flow-efficiency";
 export type { FlowEfficiencyData, FlowEfficiencyItem } from "./flow-efficiency";
 export { littlesLawProjection } from "./littles-law";
 export type { LittlesLawData } from "./littles-law";
+export { itemCatalogProjection } from "./item-catalog";
+export type { WorkItemView } from "./item-catalog";

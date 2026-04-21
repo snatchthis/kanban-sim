@@ -489,9 +489,6 @@ a:hover { color: var(--accent-hover); }
 .board {
   min-height: 420px;
   padding: var(--space-5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Transport (playback) */
@@ -514,4 +511,109 @@ a:hover { color: var(--accent-hover); }
   padding: 0 var(--space-3);
   min-width: 10ch;
   text-align: center;
+}
+
+/* Board grid */
+.board-grid {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  min-height: 420px;
+  align-items: stretch;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.column__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.column__name {
+  color: var(--text-primary);
+}
+
+.column__wip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+}
+
+.column__wip--warning {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.column__wip--danger {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.column__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.card {
+  position: relative;
+  padding: var(--space-2) var(--space-3);
+  padding-left: calc(var(--space-3) + 3px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+}
+
+.card__cos-band {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.card--blocked {
+  border-color: var(--danger);
+}
+
+.card--blocked::after {
+  content: "";
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
 }

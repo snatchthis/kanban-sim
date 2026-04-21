@@ -8,9 +8,12 @@ import {
 } from "lucide-react";
 import { useSimulation } from "@/hooks/useSimulation";
 import { usePlayback } from "@/hooks/usePlayback";
+import { useProjection } from "@/hooks/useProjection";
+import { itemCatalogProjection } from "@/projections";
+import { Board } from "@/components/board";
 
 export default function App() {
-  const { result, isRunning, run, reset } = useSimulation();
+  const { result, isRunning, boardState, run, reset } = useSimulation();
   const {
     stepForward,
     stepBackward,
@@ -19,6 +22,8 @@ export default function App() {
     currentEventIndex,
     totalEvents,
   } = usePlayback();
+
+  const items = useProjection(itemCatalogProjection);
 
   const hasResult = Boolean(result);
 
@@ -69,14 +74,7 @@ export default function App() {
             </section>
 
             <section className="panel board" aria-label="Board view">
-              <div className="empty">
-                <div className="empty__title">Board rendering pending</div>
-                <p className="empty__hint">
-                  Event stream is ready. The board component will derive state
-                  by replaying events — scaffold it under{" "}
-                  <code className="mono">src/components/board/</code>.
-                </p>
-              </div>
+              <Board boardState={boardState} items={items} />
             </section>
           </>
         ) : (
