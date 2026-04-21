@@ -51,7 +51,6 @@ function runAndFold<T>(p: Projection<T>, simConfig: SimulationConfig): T {
 
 describe("throughputProjection", () => {
   it("counts deliveries into unit-length buckets", () => {
-    // arrivals at 1..10, service 0.5, unlimited WIP → deliveries at 1.5, 2.5, ..., 9.5
     const data = runAndFold(
       throughputProjection,
       cfg({
@@ -67,17 +66,57 @@ describe("throughputProjection", () => {
       })
     );
     expect(data.totalDelivered).toBe(9);
-    // each delivery lands in its own bucket (1.5 → [1,2), 2.5 → [2,3), ...)
-    expect(data.buckets.every((b) => b.count === 1)).toBe(true);
+    const deliveryBuckets = data.buckets.filter((b) => b.count > 0);
+    expect(deliveryBuckets.every((b) => b.count === 1)).toBe(true);
   });
 
-  it("ignores non-delivery events", () => {
+  it("extends horizon on non-delivery events without incrementing count", () => {
     const data = fold(throughputProjection, [
       { type: "item_arrived", time: 1, itemId: "W-1" } as unknown as SimulationEvent,
       { type: "work_started", time: 1, itemId: "W-1", stageId: "s1" },
     ]);
     expect(data.totalDelivered).toBe(0);
-    expect(data.buckets).toHaveLength(0);
+    expect(data.buckets.length).toBeGreaterThan(0);
+    expect(data.buckets.every((b) => b.count === 0)).toBe(true);
+  });
+
+  it("emits zero-count buckets for idle periods", () => {
+    const data = runAndFold(
+      throughputProjection,
+      cfg({
+        board: board({
+          stages: [
+            stage("s1", {
+              wipLimit: 100,
+              serviceTime: { type: DistributionType.Fixed, params: { value: 0.5 } },
+            }),
+          ],
+          arrivalRate: { type: DistributionType.Fixed, params: { value: 1 } },
+          simulationDuration: 10,
+        }),
+      })
+    );
+    expect(data.buckets.length).toBeGreaterThanOrEqual(9);
+    expect(data.buckets.every((b) => b.count >= 0)).toBe(true);
+    for (let i = 1; i < data.buckets.length; i++) {
+      expect(data.buckets[i]!.periodStart).toBeCloseTo(
+        data.buckets[i - 1]!.periodEnd,
+        10,
+      );
+    }
+  });
+
+  it("averagePerPeriod uses observed horizon, not last-delivery horizon", () => {
+    const events: SimulationEvent[] = [
+      { type: "simulation_started", time: 0, config: board(), seed: 1 },
+      { type: "item_delivered", time: 1, itemId: "W-1", totalLeadTime: 1 },
+      { type: "item_delivered", time: 2, itemId: "W-2", totalLeadTime: 2 },
+      { type: "item_delivered", time: 3, itemId: "W-3", totalLeadTime: 3 },
+      { type: "simulation_ended", time: 20 },
+    ];
+    const data = fold(throughputProjection, events);
+    // 3 delivered, 21 buckets (periodOf(20)=20, indices 0..20) → avg = 3/21 ≈ 0.143
+    expect(data.averagePerPeriod).toBeCloseTo(3 / 21, 5);
   });
 });
 
@@ -180,7 +219,7 @@ describe("cfdProjection", () => {
 });
 
 describe("agingWipProjection", () => {
-  it("tracks in-flight items with ages relative to latest event time", () => {
+  it("tracks in-flight items with ages relative to arrival time", () => {
     const events: SimulationEvent[] = [
       { type: "simulation_started", time: 0, config: board(), seed: 1 },
       {
@@ -189,14 +228,15 @@ describe("agingWipProjection", () => {
         itemId: "W-1",
         item: { id: "W-1" } as never,
       },
-      { type: "item_pulled", time: 1, itemId: "W-1", stageId: "s1" },
-      { type: "work_started", time: 1, itemId: "W-1", stageId: "s1" },
-      { type: "work_completed", time: 3, itemId: "W-1", stageId: "s1" },
+      { type: "item_pulled", time: 3, itemId: "W-1", stageId: "s1" },
+      { type: "work_started", time: 3, itemId: "W-1", stageId: "s1" },
+      { type: "work_completed", time: 5, itemId: "W-1", stageId: "s1" },
     ];
     const data = fold(agingWipProjection, events);
     expect(data.items).toHaveLength(1);
     expect(data.items[0]!.itemId).toBe("W-1");
-    expect(data.items[0]!.age).toBeCloseTo(2, 10); // 3 - 1
+    // age = 5 - 1 (arrival time), not 5 - 3 (first pull time)
+    expect(data.items[0]!.age).toBeCloseTo(4, 10);
   });
 
   it("removes delivered items and records lead times for percentiles", () => {
@@ -217,6 +257,31 @@ describe("agingWipProjection", () => {
     expect(data.deliveredLeadTimes.length).toBeGreaterThan(0);
     expect(data.deliveredLeadTimes.every((t) => Math.abs(t - 0.5) < 1e-9)).toBe(true);
     expect(data.percentileLines.p50).toBeCloseTo(0.5, 10);
+  });
+
+  it("percentile baselines match leadTimeProjection", () => {
+    const simCfg = cfg({
+      board: board({
+        stages: [
+          stage("s1", {
+            wipLimit: 2,
+            serviceTime: { type: DistributionType.Fixed, params: { value: 1 } },
+          }),
+          stage("s2", {
+            wipLimit: 2,
+            serviceTime: { type: DistributionType.Fixed, params: { value: 2 } },
+          }),
+        ],
+        arrivalRate: { type: DistributionType.Fixed, params: { value: 0.5 } },
+        simulationDuration: 50,
+      }),
+    });
+    const result = runSimulation(simCfg);
+    const aging = fold(agingWipProjection, result.events);
+    const lt = fold(leadTimeProjection, result.events);
+    expect(aging.percentileLines.p50).toBeCloseTo(lt.percentiles.p50, 10);
+    expect(aging.percentileLines.p85).toBeCloseTo(lt.percentiles.p85, 10);
+    expect(aging.percentileLines.p95).toBeCloseTo(lt.percentiles.p95, 10);
   });
 });
 
@@ -269,6 +334,61 @@ describe("flowEfficiencyProjection", () => {
     const hasWait = data.items.some((i) => i.waitTime > 0);
     expect(hasWait).toBe(true);
     expect(data.averageEfficiency).toBeLessThan(1);
+  });
+
+  it("counts backlog queue time as wait, not active", () => {
+    const data = runAndFold(
+      flowEfficiencyProjection,
+      cfg({
+        board: board({
+          stages: [
+            stage("s1", {
+              wipLimit: 1,
+              serviceTime: { type: DistributionType.Fixed, params: { value: 1 } },
+            }),
+          ],
+          arrivalRate: { type: DistributionType.Fixed, params: { value: 0.5 } },
+          simulationDuration: 20,
+        }),
+      })
+    );
+    expect(data.items.length).toBeGreaterThan(2);
+    const lastItem = data.items[data.items.length - 1]!;
+    expect(lastItem.waitTime).toBeGreaterThan(lastItem.activeTime);
+    expect(lastItem.efficiency).toBeLessThan(0.5);
+  });
+
+  it("activeTime + waitTime equals lead time for every delivered item", () => {
+    const simCfg = cfg({
+      board: board({
+        stages: [
+          stage("s1", {
+            wipLimit: 1,
+            serviceTime: { type: DistributionType.Fixed, params: { value: 1 } },
+          }),
+          stage("s2", {
+            wipLimit: 1,
+            serviceTime: { type: DistributionType.Fixed, params: { value: 1 } },
+          }),
+        ],
+        arrivalRate: { type: DistributionType.Fixed, params: { value: 0.7 } },
+        simulationDuration: 30,
+      }),
+    });
+    const result = runSimulation(simCfg);
+    const fe = fold(flowEfficiencyProjection, result.events);
+    const deliveryByItem = new Map(
+      result.events
+        .filter(
+          (e): e is Extract<SimulationEvent, { type: "item_delivered" }> =>
+            e.type === "item_delivered",
+        )
+        .map((e) => [e.itemId, e.totalLeadTime]),
+    );
+    for (const item of fe.items) {
+      const lead = deliveryByItem.get(item.itemId)!;
+      expect(item.activeTime + item.waitTime).toBeCloseTo(lead, 9);
+    }
   });
 });
 

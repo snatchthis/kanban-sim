@@ -4,7 +4,7 @@ import type { Projection } from "./types";
 export interface AgingWipItem {
   itemId: string;
   currentStage: string | null;
-  enteredWipAt: number;
+  arrivedAt: number;
   age: number;
 }
 
@@ -26,7 +26,7 @@ function percentile(sorted: number[], p: number): number {
 }
 
 function recomputeAges(items: AgingWipItem[], now: number): AgingWipItem[] {
-  return items.map((i) => ({ ...i, age: now - i.enteredWipAt }));
+  return items.map((i) => ({ ...i, age: now - i.arrivedAt }));
 }
 
 export const agingWipProjection: Projection<AgingWipData> = {
@@ -39,21 +39,29 @@ export const agingWipProjection: Projection<AgingWipData> = {
   reduce: (state, event: SimulationEvent) => {
     const currentTime = event.time;
 
+    if (event.type === "item_arrived") {
+      const items = [
+        ...state.items,
+        {
+          itemId: event.itemId,
+          currentStage: null,
+          arrivedAt: event.time,
+          age: 0,
+        },
+      ];
+      return {
+        ...state,
+        items: recomputeAges(items, currentTime),
+        currentTime,
+      };
+    }
+
     if (event.type === "item_pulled") {
-      const existing = state.items.find((i) => i.itemId === event.itemId);
-      const items = existing
-        ? state.items.map((i) =>
-            i.itemId === event.itemId ? { ...i, currentStage: event.stageId } : i
-          )
-        : [
-            ...state.items,
-            {
-              itemId: event.itemId,
-              currentStage: event.stageId,
-              enteredWipAt: event.time,
-              age: 0,
-            },
-          ];
+      const items = state.items.map((i) =>
+        i.itemId === event.itemId
+          ? { ...i, currentStage: event.stageId }
+          : i
+      );
       return {
         ...state,
         items: recomputeAges(items, currentTime),
@@ -62,10 +70,10 @@ export const agingWipProjection: Projection<AgingWipData> = {
     }
 
     if (event.type === "item_delivered") {
-      const finished = state.items.find((i) => i.itemId === event.itemId);
-      const deliveredLeadTimes = finished
-        ? [...state.deliveredLeadTimes, event.time - finished.enteredWipAt]
-        : state.deliveredLeadTimes;
+      const deliveredLeadTimes = [
+        ...state.deliveredLeadTimes,
+        event.totalLeadTime,
+      ];
       const sorted = [...deliveredLeadTimes].sort((a, b) => a - b);
       return {
         items: recomputeAges(

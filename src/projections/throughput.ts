@@ -14,6 +14,26 @@ export interface ThroughputData {
 
 const PERIOD_LENGTH = 1;
 
+function periodOf(t: number) {
+  return Math.floor(t / PERIOD_LENGTH);
+}
+
+function extendBucketsTo(
+  buckets: ThroughputData["buckets"],
+  periodIndex: number,
+): ThroughputData["buckets"] {
+  if (buckets.length > periodIndex) return buckets;
+  const next = buckets.slice();
+  for (let i = buckets.length; i <= periodIndex; i++) {
+    next.push({
+      periodStart: i * PERIOD_LENGTH,
+      periodEnd: (i + 1) * PERIOD_LENGTH,
+      count: 0,
+    });
+  }
+  return next;
+}
+
 export const throughputProjection: Projection<ThroughputData> = {
   initial: {
     buckets: [],
@@ -22,28 +42,23 @@ export const throughputProjection: Projection<ThroughputData> = {
     periodLength: PERIOD_LENGTH,
   },
   reduce: (state, event: SimulationEvent) => {
-    if (event.type !== "item_delivered") return state;
+    const idx = periodOf(event.time);
+    let buckets = extendBucketsTo(state.buckets, idx);
+    let totalDelivered = state.totalDelivered;
 
-    const periodIndex = Math.floor(event.time / PERIOD_LENGTH);
-    const periodStart = periodIndex * PERIOD_LENGTH;
-    const periodEnd = periodStart + PERIOD_LENGTH;
-
-    const buckets = [...state.buckets];
-    const existingIdx = buckets.findIndex((b) => b.periodStart === periodStart);
-    if (existingIdx >= 0) {
-      const existing = buckets[existingIdx]!;
-      buckets[existingIdx] = { ...existing, count: existing.count + 1 };
-    } else {
-      buckets.push({ periodStart, periodEnd, count: 1 });
+    if (event.type === "item_delivered") {
+      const b = buckets[idx]!;
+      buckets = buckets.slice();
+      buckets[idx] = { ...b, count: b.count + 1 };
+      totalDelivered += 1;
     }
 
-    const totalDelivered = state.totalDelivered + 1;
-    const numPeriods = Math.max(1, periodIndex + 1);
-
     return {
+      ...state,
       buckets,
       totalDelivered,
-      averagePerPeriod: totalDelivered / numPeriods,
+      averagePerPeriod:
+        buckets.length > 0 ? totalDelivered / buckets.length : 0,
       periodLength: PERIOD_LENGTH,
     };
   },

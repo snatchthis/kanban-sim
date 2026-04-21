@@ -31,15 +31,17 @@ function getStageColor(
 export function AgingWipChart() {
   const data = useProjection(agingWipProjection);
   const stages = useConfigStore((s) => s.board.stages);
-  const hasData = data.items.length > 0;
+  // Only show items that have been pulled into a stage (not backlog)
+  const visibleItems = data.items.filter((i) => i.currentStage !== null);
+  const hasData = visibleItems.length > 0;
 
   return (
     <ChartCard title="Aging WIP" hasData={hasData}>
       <ResponsiveContainer
         width="100%"
-        height={Math.max(120, data.items.length * 28 + 40)}
+        height={Math.max(120, visibleItems.length * 28 + 40)}
       >
-        <BarChart data={data.items} layout="vertical" margin={{ left: 60 }}>
+        <BarChart data={visibleItems} layout="vertical" margin={{ left: 60 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             type="number"
@@ -57,7 +59,7 @@ export function AgingWipChart() {
           />
           <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
           <Bar dataKey="age" radius={[0, 2, 2, 0]}>
-            {data.items.map((item) => (
+            {visibleItems.map((item) => (
               <Cell
                 key={item.itemId}
                 fill={getStageColor(item.currentStage, stages)}
@@ -70,7 +72,7 @@ export function AgingWipChart() {
               x={data.percentileLines.p50}
               stroke={PERCENTILE_COLORS["p50"]}
               strokeDasharray="4 4"
-              label="p50"
+              label="Lead time p50"
             />
           )}
           {data.percentileLines.p85 > 0 && (
@@ -78,7 +80,7 @@ export function AgingWipChart() {
               x={data.percentileLines.p85}
               stroke={PERCENTILE_COLORS["p85"]}
               strokeDasharray="4 4"
-              label="p85"
+              label="Lead time p85"
             />
           )}
           {data.percentileLines.p95 > 0 && (
@@ -86,7 +88,7 @@ export function AgingWipChart() {
               x={data.percentileLines.p95}
               stroke={PERCENTILE_COLORS["p95"]}
               strokeDasharray="4 4"
-              label="p95"
+              label="Lead time p95"
             />
           )}
         </BarChart>

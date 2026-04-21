@@ -3,9 +3,7 @@ import type { Projection } from "./types";
 
 interface PerItemTiming {
   activeTime: number;
-  waitTime: number;
   lastWorkStart: number | null;
-  lastWorkEnd: number | null;
 }
 
 export interface FlowEfficiencyItem {
@@ -21,11 +19,6 @@ export interface FlowEfficiencyData {
   byItem: Record<string, PerItemTiming>;
 }
 
-function efficiencyOf(active: number, wait: number): number {
-  const total = active + wait;
-  return total > 0 ? active / total : 0;
-}
-
 export const flowEfficiencyProjection: Projection<FlowEfficiencyData> = {
   initial: {
     items: [],
@@ -36,19 +29,13 @@ export const flowEfficiencyProjection: Projection<FlowEfficiencyData> = {
     if (event.type === "work_started") {
       const prior = state.byItem[event.itemId] ?? {
         activeTime: 0,
-        waitTime: 0,
         lastWorkStart: null,
-        lastWorkEnd: null,
       };
-      const waitDelta =
-        prior.lastWorkEnd !== null ? event.time - prior.lastWorkEnd : 0;
       const byItem = {
         ...state.byItem,
         [event.itemId]: {
           activeTime: prior.activeTime,
-          waitTime: prior.waitTime + waitDelta,
           lastWorkStart: event.time,
-          lastWorkEnd: null,
         },
       };
       return { ...state, byItem };
@@ -61,9 +48,7 @@ export const flowEfficiencyProjection: Projection<FlowEfficiencyData> = {
         ...state.byItem,
         [event.itemId]: {
           activeTime: prior.activeTime + (event.time - prior.lastWorkStart),
-          waitTime: prior.waitTime,
           lastWorkStart: null,
-          lastWorkEnd: event.time,
         },
       };
       return { ...state, byItem };
@@ -72,11 +57,14 @@ export const flowEfficiencyProjection: Projection<FlowEfficiencyData> = {
     if (event.type === "item_delivered") {
       const timing = state.byItem[event.itemId];
       if (!timing) return state;
+      const lead = event.totalLeadTime;
+      const active = timing.activeTime;
+      const wait = Math.max(0, lead - active);
       const item: FlowEfficiencyItem = {
         itemId: event.itemId,
-        activeTime: timing.activeTime,
-        waitTime: timing.waitTime,
-        efficiency: efficiencyOf(timing.activeTime, timing.waitTime),
+        activeTime: active,
+        waitTime: wait,
+        efficiency: lead > 0 ? active / lead : 0,
       };
       const items = [...state.items, item];
       const total = items.reduce((sum, i) => sum + i.efficiency, 0);
