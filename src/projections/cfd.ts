@@ -8,6 +8,17 @@ export interface CfdDataPoint {
   stages: Record<string, number>;
 }
 
+/**
+ * CFD projection output. Each data point records *instantaneous populations*
+ * (current items in backlog / each stage / done) at the time of the event.
+ *
+ * In a forward-flow system these values equal the widths of the bands in
+ * a standard Cumulative Flow Diagram — so the chart layer renders them by
+ * stacking in cumulative order (done at bottom, backlog at top). If rework
+ * is ever introduced, these band-width values will no longer correspond to
+ * cumulative-entry differences, and the projection will need real monotonic
+ * counters (cumArrivals, cumEntered[stageId], cumDelivered).
+ */
 export interface CfdData {
   dataPoints: CfdDataPoint[];
   itemLocation: Record<string, string>;

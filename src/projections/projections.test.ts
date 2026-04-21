@@ -111,6 +111,38 @@ describe("cfdProjection", () => {
     }
   });
 
+  it("layered cumulative y-values are non-decreasing over time", () => {
+    const result = runSimulation(
+      cfg({
+        board: board({
+          stages: [
+            stage("s1", { wipLimit: 2, serviceTime: { type: DistributionType.Fixed, params: { value: 1 } } }),
+            stage("s2", { wipLimit: 2, serviceTime: { type: DistributionType.Fixed, params: { value: 1 } } }),
+          ],
+          arrivalRate: { type: DistributionType.Fixed, params: { value: 0.5 } },
+          simulationDuration: 20,
+        }),
+      })
+    );
+    const data = fold(cfdProjection, result.events);
+    const stageOrder = ["s1", "s2"];
+
+    const curves = data.dataPoints.map((p) => {
+      const layers: number[] = [p.done];
+      for (const stageId of [...stageOrder].reverse()) {
+        layers.push(layers[layers.length - 1]! + (p.stages[stageId] ?? 0));
+      }
+      layers.push(layers[layers.length - 1]! + p.backlog);
+      return layers;
+    });
+
+    for (let layer = 0; layer < curves[0]!.length; layer++) {
+      for (let t = 1; t < curves.length; t++) {
+        expect(curves[t]![layer]!).toBeGreaterThanOrEqual(curves[t - 1]![layer]!);
+      }
+    }
+  });
+
   it("cumulative total (backlog + stages + done) equals arrivals at every point", () => {
     const result = runSimulation(
       cfg({

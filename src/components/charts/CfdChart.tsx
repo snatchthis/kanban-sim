@@ -63,33 +63,36 @@ export function CfdChart() {
           <Legend />
           <Area
             type="stepAfter"
-            dataKey="backlog"
-            stackId="1"
-            stroke={BACKLOG_COLOR}
-            fill={BACKLOG_COLOR}
-            fillOpacity={0.3}
-            name="Backlog"
-          />
-          {stages.map((stage, i) => (
-            <Area
-              key={stage.id}
-              type="stepAfter"
-              dataKey={stage.id}
-              stackId="1"
-              stroke={STAGE_COLORS[i % STAGE_COLORS.length]}
-              fill={STAGE_COLORS[i % STAGE_COLORS.length]}
-              fillOpacity={0.3}
-              name={stage.name}
-            />
-          ))}
-          <Area
-            type="stepAfter"
             dataKey="done"
             stackId="1"
             stroke={DONE_COLOR}
             fill={DONE_COLOR}
             fillOpacity={0.3}
             name="Done"
+          />
+          {[...stages].reverse().map((stage, ri) => {
+            const i = stages.length - 1 - ri;
+            return (
+              <Area
+                key={stage.id}
+                type="stepAfter"
+                dataKey={stage.id}
+                stackId="1"
+                stroke={STAGE_COLORS[i % STAGE_COLORS.length]}
+                fill={STAGE_COLORS[i % STAGE_COLORS.length]}
+                fillOpacity={0.3}
+                name={stage.name}
+              />
+            );
+          })}
+          <Area
+            type="stepAfter"
+            dataKey="backlog"
+            stackId="1"
+            stroke={BACKLOG_COLOR}
+            fill={BACKLOG_COLOR}
+            fillOpacity={0.3}
+            name="Backlog"
           />
         </AreaChart>
       </ResponsiveContainer>
