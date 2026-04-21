@@ -617,3 +617,165 @@ a:hover { color: var(--accent-hover); }
   border-radius: 50%;
   background: var(--danger);
 }
+
+/* =========================================================================
+   Tab bar
+   ========================================================================= */
+
+.tab-bar {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+}
+
+.tab-bar__tab {
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.tab-bar__tab:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.tab-bar__tab--active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.tab-bar__tab--active:hover {
+  background: var(--accent-hover);
+  color: var(--text-on-accent);
+}
+
+/* =========================================================================
+   Chart panel + cards
+   ========================================================================= */
+
+.chart-panel {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .chart-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  padding: var(--space-4);
+}
+
+.chart-card--full {
+  grid-column: 1 / -1;
+}
+
+.chart-card__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.chart-card__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.chart-card__kpi {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.chart-card__kpi-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.chart-card__kpi-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* =========================================================================
+   KPI cards (Little's Law)
+   ========================================================================= */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.kpi-card__label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.kpi-card__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.kpi-card--success {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.kpi-card--success .kpi-card__value {
+  color: var(--success);
+}
+
+.kpi-card--danger {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.kpi-card--danger .kpi-card__value {
+  color: var(--danger);
+}

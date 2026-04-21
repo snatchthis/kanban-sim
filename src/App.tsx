@@ -11,6 +11,8 @@ import { usePlayback } from "@/hooks/usePlayback";
 import { useProjection } from "@/hooks/useProjection";
 import { itemCatalogProjection } from "@/projections";
 import { Board } from "@/components/board";
+import { ChartPanel } from "@/components/charts";
+import { useUiStore } from "@/store/ui-store";
 
 export default function App() {
   const { result, isRunning, boardState, run, reset } = useSimulation();
@@ -24,6 +26,7 @@ export default function App() {
   } = usePlayback();
 
   const items = useProjection(itemCatalogProjection);
+  const { activeTab, setActiveTab } = useUiStore();
 
   const hasResult = Boolean(result);
 
@@ -73,9 +76,34 @@ export default function App() {
               <Metric label="Seed" value={<span className="mono">—</span>} />
             </section>
 
-            <section className="panel board" aria-label="Board view">
-              <Board boardState={boardState} items={items} />
-            </section>
+            <nav className="tab-bar" role="tablist" aria-label="View switcher">
+              <button
+                type="button"
+                className={`tab-bar__tab${activeTab === "board" ? " tab-bar__tab--active" : ""}`}
+                role="tab"
+                aria-selected={activeTab === "board"}
+                onClick={() => setActiveTab("board")}
+              >
+                Board
+              </button>
+              <button
+                type="button"
+                className={`tab-bar__tab${activeTab === "charts" ? " tab-bar__tab--active" : ""}`}
+                role="tab"
+                aria-selected={activeTab === "charts"}
+                onClick={() => setActiveTab("charts")}
+              >
+                Charts
+              </button>
+            </nav>
+
+            {activeTab === "board" ? (
+              <section className="panel board" aria-label="Board view">
+                <Board boardState={boardState} items={items} />
+              </section>
+            ) : (
+              <ChartPanel />
+            )}
           </>
         ) : (
           <section className="panel">
