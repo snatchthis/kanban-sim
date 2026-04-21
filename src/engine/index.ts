@@ -11,8 +11,11 @@ export {
 export {
   createSnapshot,
   findNearestSnapshot,
+  findNearestSnapshotByIndex,
   shouldTakeSnapshot,
+  applyEventToBoardState,
   reconstructState,
+  reconstructStateAt,
 } from "./snapshot";
 export { createPRNG } from "./random/prng";
 export { sample, exponential, uniform, normal, logNormal } from "./random/distributions";

@@ -1,16 +1,17 @@
 import { create } from "zustand";
+import type { PlaybackSpeed } from "@/controller";
 
 type ActiveTab = "board" | "charts" | "config";
 
 interface UiState {
   activeTab: ActiveTab;
-  playbackSpeed: number;
+  playbackSpeed: PlaybackSpeed;
   showMetrics: boolean;
 }
 
 interface UiActions {
   setActiveTab: (tab: ActiveTab) => void;
-  setPlaybackSpeed: (speed: number) => void;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   toggleMetrics: () => void;
 }
 

@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useSimulationStore } from "@/store/simulation-store";
 import { useConfigStore } from "@/store/config-store";
-import { runSimulation } from "@/engine";
+import { runSimulation, reconstructStateAt, findNearestSnapshotByIndex } from "@/engine";
 
 export function useSimulation() {
   const { isRunning, result, currentEventIndex, start, complete, setEventIndex, reset } =
@@ -15,10 +15,17 @@ export function useSimulation() {
     complete(simResult);
   }, [board, seed, start, complete]);
 
+  const boardState = useMemo(() => {
+    if (!result) return null;
+    const nearest = findNearestSnapshotByIndex(result.snapshots, currentEventIndex);
+    return reconstructStateAt(nearest, result.events, currentEventIndex);
+  }, [result, currentEventIndex]);
+
   return {
     isRunning,
     result,
     currentEventIndex,
+    boardState,
     run,
     setEventIndex,
     reset,
