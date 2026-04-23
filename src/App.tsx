@@ -9,12 +9,18 @@ import {
 import { useSimulation } from "@/hooks/useSimulation";
 import { usePlayback } from "@/hooks/usePlayback";
 import { useProjection } from "@/hooks/useProjection";
+import { useConfigFromUrl } from "@/hooks/useConfigFromUrl";
 import { itemCatalogProjection } from "@/projections";
 import { Board } from "@/components/board";
 import { ChartPanel } from "@/components/charts";
+import { ConfigPanel } from "@/components/config";
 import { useUiStore } from "@/store/ui-store";
+import { useSimulationStore, hashConfig } from "@/store/simulation-store";
+import { useConfigStore } from "@/store/config-store";
 
 export default function App() {
+  useConfigFromUrl();
+
   const { result, isRunning, boardState, run, reset } = useSimulation();
   const {
     stepForward,
@@ -27,8 +33,12 @@ export default function App() {
 
   const items = useProjection(itemCatalogProjection);
   const { activeTab, setActiveTab } = useUiStore();
+  const lastRunConfigHash = useSimulationStore((s) => s.lastRunConfigHash);
+  const { board, seed } = useConfigStore();
 
   const hasResult = Boolean(result);
+  const isStale =
+    hasResult && lastRunConfigHash !== hashConfig({ board, seed });
 
   return (
     <div className="app">
@@ -64,7 +74,41 @@ export default function App() {
       </header>
 
       <main className="app__main">
-        {hasResult ? (
+        <nav className="tab-bar" role="tablist" aria-label="View switcher">
+          <button
+            type="button"
+            className={`tab-bar__tab${activeTab === "board" ? " tab-bar__tab--active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "board"}
+            onClick={() => setActiveTab("board")}
+            disabled={!hasResult}
+          >
+            Board
+          </button>
+          <button
+            type="button"
+            className={`tab-bar__tab${activeTab === "charts" ? " tab-bar__tab--active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "charts"}
+            onClick={() => setActiveTab("charts")}
+            disabled={!hasResult}
+          >
+            Charts
+          </button>
+          <button
+            type="button"
+            className={`tab-bar__tab${activeTab === "config" ? " tab-bar__tab--active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "config"}
+            onClick={() => setActiveTab("config")}
+          >
+            Config
+          </button>
+        </nav>
+
+        {activeTab === "config" ? (
+          <ConfigPanel />
+        ) : hasResult ? (
           <>
             <section className="panel stat-strip" aria-label="Run summary">
               <Metric label="Events" value={result!.events.length.toLocaleString()} />
@@ -76,26 +120,14 @@ export default function App() {
               <Metric label="Seed" value={<span className="mono">—</span>} />
             </section>
 
-            <nav className="tab-bar" role="tablist" aria-label="View switcher">
-              <button
-                type="button"
-                className={`tab-bar__tab${activeTab === "board" ? " tab-bar__tab--active" : ""}`}
-                role="tab"
-                aria-selected={activeTab === "board"}
-                onClick={() => setActiveTab("board")}
-              >
-                Board
-              </button>
-              <button
-                type="button"
-                className={`tab-bar__tab${activeTab === "charts" ? " tab-bar__tab--active" : ""}`}
-                role="tab"
-                aria-selected={activeTab === "charts"}
-                onClick={() => setActiveTab("charts")}
-              >
-                Charts
-              </button>
-            </nav>
+            {isStale && (
+              <div className="stale-banner">
+                <span>Config has changed since the last run.</span>
+                <button type="button" className="btn" onClick={run}>
+                  Run again
+                </button>
+              </div>
+            )}
 
             {activeTab === "board" ? (
               <section className="panel board" aria-label="Board view">
