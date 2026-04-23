@@ -6,7 +6,6 @@ import { useProjection } from "@/hooks/useProjection";
 import { useConfigFromUrl } from "@/hooks/useConfigFromUrl";
 import { itemCatalogProjection } from "@/projections";
 import { Board } from "@/components/board";
-import { Sidebar } from "@/components/sidebar";
 import { ChartsStrip } from "@/components/charts-strip";
 import { AdvancedDrawer } from "@/components/advanced";
 import { useSimulationStore, hashConfig } from "@/store/simulation-store";
@@ -136,8 +135,6 @@ export default function App() {
           <Settings size={16} />
         </button>
       </header>
-
-      <Sidebar />
 
       <main className="main">
         <section className="board-area" aria-label="Board view">
