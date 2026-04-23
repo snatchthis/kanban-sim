@@ -5,9 +5,11 @@ import { Column } from "./Column";
 interface BoardProps {
   boardState: BoardState | null;
   items: Map<string, WorkItemView>;
+  stageMeans: Record<string, number>;
+  currentTime: number;
 }
 
-export function Board({ boardState, items }: BoardProps) {
+export function Board({ boardState, items, stageMeans, currentTime }: BoardProps) {
   if (!boardState) return null;
 
   return (
@@ -17,6 +19,8 @@ export function Board({ boardState, items }: BoardProps) {
         itemIds={boardState.backlog}
         wipLimit={null}
         items={items}
+        stageMean={null}
+        currentTime={currentTime}
         variant="backlog"
         testId="column-backlog"
       />
@@ -27,6 +31,8 @@ export function Board({ boardState, items }: BoardProps) {
           itemIds={stage.items}
           wipLimit={stage.wipLimit}
           items={items}
+          stageMean={stageMeans[stage.id] ?? null}
+          currentTime={currentTime}
           variant="stage"
           testId={`column-${stage.id}`}
         />
@@ -36,6 +42,8 @@ export function Board({ boardState, items }: BoardProps) {
         itemIds={boardState.done}
         wipLimit={null}
         items={items}
+        stageMean={null}
+        currentTime={currentTime}
         variant="done"
         testId="column-done"
       />

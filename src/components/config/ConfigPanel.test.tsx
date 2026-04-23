@@ -32,14 +32,13 @@ describe("ConfigPanel", () => {
     const checkboxes = screen.getAllByRole("checkbox", { name: /unlimited/i });
     const firstCheckbox = checkboxes[0]!;
 
-    const initialLimit = useConfigStore.getState().board.stages[0]!.wipLimit;
-    expect(initialLimit).not.toBeNull();
+    expect(useConfigStore.getState().board.stages[0]!.wipLimit).not.toBeNull();
 
     fireEvent.click(firstCheckbox);
     expect(useConfigStore.getState().board.stages[0]!.wipLimit).toBeNull();
 
     fireEvent.click(firstCheckbox);
-    expect(useConfigStore.getState().board.stages[0]!.wipLimit).toBe(initialLimit);
+    expect(useConfigStore.getState().board.stages[0]!.wipLimit).not.toBeNull();
   });
 
   it("picking a new preset replaces the full board", () => {

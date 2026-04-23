@@ -5,10 +5,9 @@ const exp = (rate: number) => ({ type: DistributionType.Exponential, params: { r
 
 export const defaultBoard: BoardConfig = {
   stages: [
-    { id: "analysis", name: "Analysis", wipLimit: 3, serviceTime: exp(1), workers: 1, hasSubColumns: false },
-    { id: "dev", name: "Development", wipLimit: 3, serviceTime: exp(0.5), workers: 1, hasSubColumns: false },
-    { id: "review", name: "Review", wipLimit: 2, serviceTime: exp(2), workers: 1, hasSubColumns: false },
-    { id: "test", name: "Test", wipLimit: 2, serviceTime: exp(1), workers: 1, hasSubColumns: false },
+    { id: "todo", name: "To Do", wipLimit: 5, serviceTime: exp(5), workers: 1, hasSubColumns: false },
+    { id: "in_progress", name: "In Progress", wipLimit: 3, serviceTime: exp(0.5), workers: 3, hasSubColumns: false },
+    { id: "review", name: "Review", wipLimit: 2, serviceTime: exp(1), workers: 2, hasSubColumns: false },
   ],
   arrivalRate: exp(0.3),
   pullPolicy: PullPolicyType.FIFO,

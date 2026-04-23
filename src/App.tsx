@@ -1,38 +1,32 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  RotateCcw,
-  SkipBack,
-  SkipForward,
-} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { FastForward, Play, RotateCcw } from "lucide-react";
 import { useSimulation } from "@/hooks/useSimulation";
 import { usePlayback } from "@/hooks/usePlayback";
 import { useProjection } from "@/hooks/useProjection";
 import { useConfigFromUrl } from "@/hooks/useConfigFromUrl";
 import { itemCatalogProjection } from "@/projections";
 import { Board } from "@/components/board";
-import { ChartPanel } from "@/components/charts";
-import { ConfigPanel } from "@/components/config";
-import { useUiStore } from "@/store/ui-store";
+import { Sidebar } from "@/components/sidebar";
+import { ChartsStrip } from "@/components/charts-strip";
 import { useSimulationStore, hashConfig } from "@/store/simulation-store";
 import { useConfigStore } from "@/store/config-store";
+
+type SimStatus = "standby" | "running" | "complete";
 
 export default function App() {
   useConfigFromUrl();
 
   const { result, isRunning, boardState, run, reset } = useSimulation();
   const {
-    stepForward,
-    stepBackward,
-    seekToStart,
+    isPlaying,
+    play,
+    pause,
     seekToEnd,
     currentEventIndex,
     totalEvents,
   } = usePlayback();
 
-  const items = useProjection(itemCatalogProjection);
-  const { activeTab, setActiveTab } = useUiStore();
+  const catalog = useProjection(itemCatalogProjection);
   const lastRunConfigHash = useSimulationStore((s) => s.lastRunConfigHash);
   const { board, seed } = useConfigStore();
 
@@ -40,180 +34,116 @@ export default function App() {
   const isStale =
     hasResult && lastRunConfigHash !== hashConfig({ board, seed });
 
+  const atEnd = hasResult && currentEventIndex >= totalEvents - 1;
+  const status: SimStatus = !hasResult
+    ? "standby"
+    : isPlaying || (hasResult && !atEnd)
+      ? "running"
+      : "complete";
+
+  const tick = boardState ? Math.floor(boardState.currentTime) : 0;
+
+  const autoPlayRef = useRef(false);
+  useEffect(() => {
+    if (autoPlayRef.current && result) {
+      autoPlayRef.current = false;
+      const t = setTimeout(() => play(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [result, play]);
+
+  const initialize = () => {
+    if (!hasResult || isStale) {
+      autoPlayRef.current = true;
+      run();
+    } else if (isPlaying) {
+      pause();
+    } else {
+      play();
+    }
+  };
+
+  const handleReset = () => {
+    pause();
+    reset();
+  };
+
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">
-          <span className="app__brand-mark" aria-hidden>
-            K
-          </span>
-          Kanban Simulator
-          <span className="app__brand-sub">flow · wip · cfd</span>
-        </div>
-
-        <div className="app__toolbar">
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={reset}
-            disabled={!hasResult || isRunning}
-          >
-            <RotateCcw size={14} />
-            Reset
-          </button>
+        <div className="app__header-controls">
           <button
             type="button"
             className="btn btn--primary"
-            onClick={run}
+            onClick={initialize}
             disabled={isRunning}
           >
-            <Play size={14} />
-            {isRunning ? "Running…" : "Run simulation"}
+            <Play size={14} fill="currentColor" />
+            {hasResult && !isStale && isPlaying ? "Pause" : "Initialize"}
           </button>
+          <button
+            type="button"
+            className="btn btn--icon"
+            onClick={seekToEnd}
+            disabled={!hasResult || atEnd}
+            aria-label="Fast forward to end"
+          >
+            <FastForward size={16} />
+          </button>
+          <button
+            type="button"
+            className="btn btn--icon"
+            onClick={handleReset}
+            disabled={!hasResult || isRunning}
+            aria-label="Reset"
+          >
+            <RotateCcw size={15} />
+          </button>
+        </div>
+
+        <div className="brand">
+          <span className="brand__mark">F</span>
+          <div>
+            <div className="brand__name">
+              FLOW<span className="brand__name-accent">SIM</span>
+            </div>
+            <span className="brand__sub">sys.mngr.v1</span>
+          </div>
+        </div>
+
+        <div className="header__spacer" />
+
+        <div className="header__stat">
+          <span className="header__stat-label">Tick Time</span>
+          <span className="header__stat-value">{tick}</span>
+        </div>
+
+        <div className={`header__status header__status--${status}`}>
+          <span className="header__status-label">Status</span>
+          <span className="header__status-value">{status}</span>
+          <span className="header__status-dot" />
         </div>
       </header>
 
-      <main className="app__main">
-        <nav className="tab-bar" role="tablist" aria-label="View switcher">
-          <button
-            type="button"
-            className={`tab-bar__tab${activeTab === "board" ? " tab-bar__tab--active" : ""}`}
-            role="tab"
-            aria-selected={activeTab === "board"}
-            onClick={() => setActiveTab("board")}
-            disabled={!hasResult}
-          >
-            Board
-          </button>
-          <button
-            type="button"
-            className={`tab-bar__tab${activeTab === "charts" ? " tab-bar__tab--active" : ""}`}
-            role="tab"
-            aria-selected={activeTab === "charts"}
-            onClick={() => setActiveTab("charts")}
-            disabled={!hasResult}
-          >
-            Charts
-          </button>
-          <button
-            type="button"
-            className={`tab-bar__tab${activeTab === "config" ? " tab-bar__tab--active" : ""}`}
-            role="tab"
-            aria-selected={activeTab === "config"}
-            onClick={() => setActiveTab("config")}
-          >
-            Config
-          </button>
-        </nav>
+      <Sidebar />
 
-        {activeTab === "config" ? (
-          <ConfigPanel />
-        ) : hasResult ? (
-          <>
-            <section className="panel stat-strip" aria-label="Run summary">
-              <Metric label="Events" value={result!.events.length.toLocaleString()} />
-              <Metric label="Snapshots" value={result!.snapshots.length.toLocaleString()} />
-              <Metric
-                label="Position"
-                value={`${currentEventIndex + 1} / ${totalEvents}`}
-              />
-              <Metric label="Seed" value={<span className="mono">—</span>} />
-            </section>
-
-            {isStale && (
-              <div className="stale-banner">
-                <span>Config has changed since the last run.</span>
-                <button type="button" className="btn" onClick={run}>
-                  Run again
-                </button>
-              </div>
-            )}
-
-            {activeTab === "board" ? (
-              <section className="panel board" aria-label="Board view">
-                <Board boardState={boardState} items={items} />
-              </section>
-            ) : (
-              <ChartPanel />
-            )}
-          </>
-        ) : (
-          <section className="panel">
-            <div className="empty">
-              <div className="empty__title">No simulation yet</div>
-              <p className="empty__hint">
-                Configure a board and press{" "}
-                <kbd className="pill mono">Run simulation</kbd> to generate a
-                deterministic event stream. Same config + seed always produces
-                the same run.
-              </p>
+      <main className="main">
+        <section className="board-area" aria-label="Board view">
+          {isStale && (
+            <div className="stale-banner">
+              <span>Config changed — initialize to re-run</span>
             </div>
-          </section>
-        )}
+          )}
+          <Board
+            boardState={boardState}
+            items={catalog.items}
+            stageMeans={catalog.stageMeans}
+            currentTime={boardState?.currentTime ?? 0}
+          />
+        </section>
+
+        <ChartsStrip />
       </main>
-
-      <footer className="app__footer">
-        <div className="transport" role="group" aria-label="Playback controls">
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onClick={seekToStart}
-            disabled={!hasResult || currentEventIndex === 0}
-            aria-label="Seek to start"
-          >
-            <SkipBack size={14} />
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onClick={stepBackward}
-            disabled={!hasResult || currentEventIndex === 0}
-            aria-label="Step back"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span className="transport__readout" aria-live="polite">
-            {hasResult
-              ? `${String(currentEventIndex + 1).padStart(String(totalEvents).length, "0")} / ${totalEvents}`
-              : "— / —"}
-          </span>
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onClick={stepForward}
-            disabled={!hasResult || currentEventIndex >= totalEvents - 1}
-            aria-label="Step forward"
-          >
-            <ChevronRight size={14} />
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onClick={seekToEnd}
-            disabled={!hasResult || currentEventIndex >= totalEvents - 1}
-            aria-label="Seek to end"
-          >
-            <SkipForward size={14} />
-          </button>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="metric">
-      <span className="metric__label">{label}</span>
-      <span className="metric__value" data-metric>
-        {value}
-      </span>
     </div>
   );
 }

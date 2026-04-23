@@ -9,6 +9,8 @@ interface ColumnProps {
   itemIds: string[];
   wipLimit: number | null;
   items: Map<string, WorkItemView>;
+  stageMean: number | null;
+  currentTime: number;
   variant: ColumnVariant;
   testId: string;
 }
@@ -25,7 +27,16 @@ function wipLabel(count: number, limit: number | null, variant: ColumnVariant): 
   return `${count}/${limit}`;
 }
 
-export function Column({ name, itemIds, wipLimit, items, variant, testId }: ColumnProps) {
+export function Column({
+  name,
+  itemIds,
+  wipLimit,
+  items,
+  stageMean,
+  currentTime,
+  variant,
+  testId,
+}: ColumnProps) {
   const count = itemIds.length;
   return (
     <div className="column" data-testid={testId}>
@@ -40,7 +51,15 @@ export function Column({ name, itemIds, wipLimit, items, variant, testId }: Colu
           {itemIds.map((id) => {
             const item = items.get(id);
             if (!item) return null;
-            return <WorkItemCard key={item.id} item={item} />;
+            return (
+              <WorkItemCard
+                key={item.id}
+                item={item}
+                stageMean={stageMean}
+                currentTime={currentTime}
+                showProgress={variant === "stage"}
+              />
+            );
           })}
         </AnimatePresence>
       </div>
