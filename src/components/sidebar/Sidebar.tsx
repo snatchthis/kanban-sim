@@ -1,5 +1,5 @@
 import { useConfigStore } from "@/store/config-store";
-import { PullPolicyType } from "@/engine/types";
+import { PullPolicyType, DistributionType } from "@/engine/types";
 import type { StageConfig } from "@/engine/types";
 
 const DEV_STAGE_ID = "in_progress";
@@ -24,6 +24,7 @@ export function Sidebar() {
   const setPullPolicy = useConfigStore((s) => s.setPullPolicy);
 
   const arrivalRate = board.arrivalRate.params["rate"] ?? 0.3;
+  const isCustomArrival = board.arrivalRate.type !== DistributionType.Exponential;
   const devStage = board.stages.find((s) => s.id === DEV_STAGE_ID);
   const qaStage = board.stages.find((s) => s.id === QA_STAGE_ID);
 
@@ -35,11 +36,12 @@ export function Sidebar() {
         <SliderControl
           label="Incoming Flow"
           value={getArrivalPercent(arrivalRate)}
-          display={`${getArrivalPercent(arrivalRate)}%`}
+          display={isCustomArrival ? "custom" : `${getArrivalPercent(arrivalRate)}%`}
           min={0}
           max={100}
           step={5}
           onChange={(v) => setArrivalRate(v / 100)}
+          disabled={isCustomArrival}
         />
 
         {devStage && (
@@ -112,9 +114,10 @@ interface SliderProps {
   max: number;
   step: number;
   onChange: (v: number) => void;
+  disabled?: boolean;
 }
 
-function SliderControl({ label, value, display, min, max, step, onChange }: SliderProps) {
+function SliderControl({ label, value, display, min, max, step, onChange, disabled }: SliderProps) {
   return (
     <div className="control">
       <div className="control__header">
@@ -129,6 +132,7 @@ function SliderControl({ label, value, display, min, max, step, onChange }: Slid
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        disabled={disabled}
         aria-label={label}
       />
     </div>

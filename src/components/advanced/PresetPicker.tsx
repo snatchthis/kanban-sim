@@ -9,16 +9,14 @@ const presets: [string, string, BoardConfig][] = [
   ["High Variability", "highVariability", highVariability],
 ];
 
-export function PresetSelect() {
+export function PresetPicker() {
   const setBoard = useConfigStore((s) => s.setBoard);
 
   return (
-    <div className="field">
-      <label className="field__label" htmlFor="preset-select">
-        Preset
-      </label>
+    <div className="field-row">
+      <span className="field-row__label">Preset</span>
       <select
-        id="preset-select"
+        className="select"
         aria-label="Preset"
         defaultValue=""
         onChange={(e) => {
@@ -27,7 +25,7 @@ export function PresetSelect() {
         }}
       >
         <option value="" disabled>
-          Select preset…
+          Select preset...
         </option>
         {presets.map(([label, key]) => (
           <option key={key} value={key}>

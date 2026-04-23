@@ -1,7 +1,8 @@
 import { useConfigStore } from "@/store/config-store";
 import type { StageConfig } from "@/engine/types";
 import { DistributionType } from "@/engine/types";
-import { StageEditor } from "./StageEditor";
+import { Plus } from "lucide-react";
+import { StageRow } from "./StageRow";
 
 const MAX_STAGES = 10;
 
@@ -48,9 +49,10 @@ export function StagesEditor() {
   }
 
   return (
-    <div className="stages-editor">
+    <div className="advanced__section">
+      <h3 className="advanced__title">Stages</h3>
       {board.stages.map((stage, i) => (
-        <StageEditor
+        <StageRow
           key={stage.id}
           stage={stage}
           index={i}
@@ -63,10 +65,11 @@ export function StagesEditor() {
       ))}
       <button
         type="button"
-        className="btn"
+        className="btn btn--ghost"
         disabled={board.stages.length >= MAX_STAGES}
         onClick={addStage}
       >
+        <Plus size={14} />
         Add stage
       </button>
     </div>

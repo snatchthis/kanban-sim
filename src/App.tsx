@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { FastForward, Play, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FastForward, Play, RotateCcw, Settings } from "lucide-react";
 import { useSimulation } from "@/hooks/useSimulation";
 import { usePlayback } from "@/hooks/usePlayback";
 import { useProjection } from "@/hooks/useProjection";
@@ -8,6 +8,7 @@ import { itemCatalogProjection } from "@/projections";
 import { Board } from "@/components/board";
 import { Sidebar } from "@/components/sidebar";
 import { ChartsStrip } from "@/components/charts-strip";
+import { AdvancedDrawer } from "@/components/advanced";
 import { useSimulationStore, hashConfig } from "@/store/simulation-store";
 import { useConfigStore } from "@/store/config-store";
 
@@ -15,6 +16,8 @@ type SimStatus = "standby" | "running" | "complete";
 
 export default function App() {
   useConfigFromUrl();
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { result, isRunning, boardState, run, reset } = useSimulation();
   const {
@@ -123,6 +126,15 @@ export default function App() {
           <span className="header__status-value">{status}</span>
           <span className="header__status-dot" />
         </div>
+
+        <button
+          type="button"
+          className="btn btn--icon"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Advanced configuration"
+        >
+          <Settings size={16} />
+        </button>
       </header>
 
       <Sidebar />
@@ -144,6 +156,8 @@ export default function App() {
 
         <ChartsStrip />
       </main>
+
+      <AdvancedDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   );
 }

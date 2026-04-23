@@ -19,42 +19,43 @@ const paramLabels: Record<DistributionType, string[]> = {
   [DistributionType.Poisson]: ["rate"],
 };
 
-interface DistributionFieldProps {
+interface DistInputProps {
   label: string;
   value: DistributionConfig;
   onChange: (next: DistributionConfig) => void;
   testId?: string;
 }
 
-export function DistributionField({ label, value, onChange, testId }: DistributionFieldProps) {
+export function DistInput({ label, value, onChange, testId }: DistInputProps) {
   const params = paramLabels[value.type] ?? [];
 
   return (
-    <div className="field">
-      <label className="field__label">{label}</label>
-      <div className="dist-field">
-        <select
-          data-testid={testId ? `dist-type-${testId}` : undefined}
-          value={value.type}
-          onChange={(e) => {
-            const nextType = e.target.value as DistributionType;
-            onChange({
-              type: nextType,
-              params: { ...defaultParamsFor[nextType] },
-            });
-          }}
-        >
-          {Object.values(DistributionType).map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        {params.map((key) => (
+    <div className="dist-input">
+      <select
+        className="select"
+        data-testid={testId ? `dist-type-${testId}` : undefined}
+        value={value.type}
+        onChange={(e) => {
+          const nextType = e.target.value as DistributionType;
+          onChange({
+            type: nextType,
+            params: { ...defaultParamsFor[nextType] },
+          });
+        }}
+      >
+        {Object.values(DistributionType).map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+      {params.map((key) => (
+        <div key={key} className="field-row">
+          <span className="field-row__label">{key}</span>
           <input
-            key={key}
             type="number"
             step="any"
+            className="number-input"
             aria-label={`${label} ${key}`}
             value={value.params[key] ?? 0}
             onChange={(e) =>
@@ -64,8 +65,8 @@ export function DistributionField({ label, value, onChange, testId }: Distributi
               })
             }
           />
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }

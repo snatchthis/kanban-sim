@@ -1,17 +1,16 @@
 import { useConfigStore } from "@/store/config-store";
+import { Shuffle } from "lucide-react";
 
 export function SeedField() {
   const seed = useConfigStore((s) => s.seed);
   const setSeed = useConfigStore((s) => s.setSeed);
 
   return (
-    <div className="field field--inline">
-      <label className="field__label" htmlFor="seed-input">
-        Seed
-      </label>
+    <div className="field-row">
+      <span className="field-row__label">Seed</span>
       <input
-        id="seed-input"
         type="number"
+        className="number-input"
         min={0}
         step={1}
         aria-label="Seed"
@@ -20,11 +19,11 @@ export function SeedField() {
       />
       <button
         type="button"
-        className="btn btn--ghost"
+        className="icon-btn--sm"
         aria-label="Randomize seed"
         onClick={() => setSeed(Math.floor(Math.random() * 1e9))}
       >
-        🎲
+        <Shuffle size={14} />
       </button>
     </div>
   );
